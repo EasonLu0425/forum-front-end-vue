@@ -2,6 +2,11 @@ import { apiHelper } from './../utils/helpers'
 const getToken = () => localStorage.getItem('token')
 
 export default {
+   getRestaurant ({ restaurantId }) {
+    return apiHelper.get(`/restaurants/${restaurantId}`, {
+      headers: { Authorization: `Bearer ${getToken()}` }
+    })
+  },
   getRestaurants ({ page, categoryId }) {
     const searchParams = new URLSearchParams({ page, categoryId })
     return apiHelper.get(`/restaurants?${searchParams.toString()}`, {
@@ -18,5 +23,15 @@ export default {
       headers: { Authorization: `Bearer ${getToken()}` }
     })
   },
+  addComment( {restaurantId, text}) {
+    return apiHelper.post('/comments', {restaurantId, text} , {
+      headers: { Authorization: `Bearer ${getToken()}` }
+    })
+  },
+  deleteComment ({commentId}) {
+    return apiHelper.delete(`/comments/${commentId}`, {
+      headers: { Authorization: `Bearer ${getToken()}` }
+    })
+  }
   
 }

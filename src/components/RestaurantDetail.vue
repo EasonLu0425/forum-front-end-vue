@@ -31,10 +31,10 @@
     </div>
     <div class="col-lg-8">
       <p>{{ restaurant.description }}</p>
-      <a
+      <router-link
         class="btn btn-primary btn-border mr-2"
-        href="#"
-      >Dashboard</a>
+        :to="{name: 'restaurant-dashboard', params: { id: restaurant.id }}"
+      >Dashboard</router-link>
 
       <button
         type="button"
@@ -74,6 +74,9 @@
 
 <script>
 import { emptyImageFilter } from './../utils/mixins'
+import usersAPI from './../apis/users'
+import { Toast } from '../utils/helpers'
+
 export default {
   name:"restaurantDetails",
   mixins: [emptyImageFilter],
@@ -101,18 +104,49 @@ export default {
         isFavorited: false
       }
     },
-    addLike() {
-      this.restaurant = {
+    async addLike() {
+      try {
+        const {data} = await usersAPI.addLike({restaurantId: this.restaurant.id})
+        if (data.stauts === 'error') {
+          throw new Error(data.message)
+        }
+        this.restaurant = {
         ...this.restaurant,
         isLiked: true
       }
+      } catch (error) {
+        Toast.fire({
+          icon:'error',
+          title:'目前無法新增like，請稍後再試'
+        })
+      }
+      
     },
-    deleteLike() {
-      this.restaurant = {
+    async deleteLike() {
+      try {
+        const {data} = await usersAPI.deleteLike({restaurantId: this.restaurant.id})
+        if (data.stauts === 'error') {
+          throw new Error(data.message)
+        }
+        this.restaurant = {
         ...this.restaurant,
         isLiked: false
       }
+      } catch (error) {
+        Toast.fire({
+          icon:'error',
+          title:'目前無法刪除like，請稍後再試'
+        })
+      }
     },
-  }
+  },
+  watch: {
+    initialRestaurant (newValue) {
+      this.restaurant = {
+        ...this.restaurant,
+        ...newValue
+      }
+    }
+  },
 }
 </script>

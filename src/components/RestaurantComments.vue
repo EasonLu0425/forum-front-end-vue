@@ -31,18 +31,11 @@
 
 <script>
 
-const dummyUser = {
-  currentUser: {
-    id: 1,
-    name: '管理者',
-    email: 'root@example.com',
-    image: 'https://i.pravatar.cc/300',
-    isAdmin: true
-  },
-  isAuthenticated: true
-}
-
 import { fromNowFilter } from './../utils/mixins'
+import restaurantsAPI from './../apis/restaurants'
+import { Toast } from '../utils/helpers'
+import {mapState} from 'vuex'
+
 export default {
   name:"restaurantComments",
   props: {
@@ -51,17 +44,24 @@ export default {
       required: true
     }
   },
-  data() {
-    return {
-      currentUser: dummyUser.currentUser
-    }
+  computed:{
+    ...mapState(['currentUser', 'isAuthenticated'])
   },
   methods:{
-    handleDeleteButtonClick (commentId) {
-      console.log('handleDeleteButtonClick', commentId)
-      // TODO: 請求 API 伺服器刪除 id 為 commentId 的評論
-      // 觸發父層事件 - $emit( '事件名稱' , 傳遞的資料 )
+    async handleDeleteButtonClick (commentId) {
+      try {
+        console.log('handleDeleteButtonClick', commentId)
+        const {data} = await restaurantsAPI.deleteComment({commentId})
+        if (data.status === 'error') {
+          throw new Error(data.message)
+        }
       this.$emit('after-delete-comment', commentId)
+      } catch (error) {
+        Toast.fire({
+          icon:'error',
+          title:'目前無法刪除評論，請稍後再試'
+        })
+      }
     }
   },
   mixins: [fromNowFilter],

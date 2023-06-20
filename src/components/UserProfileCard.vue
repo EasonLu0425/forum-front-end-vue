@@ -2,11 +2,7 @@
   <div class="card mb-3">
     <div class="row no-gutters">
       <div class="col-md-4">
-        <img
-          :src="user.image | emptyImageFilter"
-          width="300px"
-          height="300px"
-        >
+        <img :src="user.image | emptyImage" width="300px" height="300px" />
       </div>
       <div class="col-md-8">
         <div class="card-body">
@@ -18,21 +14,21 @@
           </p>
           <ul class="list-unstyled">
             <li>
-              <strong>{{ commentsLength }}</strong> 已評論餐廳
+              <strong>{{ user.commentsLength }}</strong> 已評論餐廳
             </li>
             <li>
-              <strong>{{ favoritedRestaurantsLength }}</strong> 收藏的餐廳
+              <strong>{{ user.favoritedRestaurantsLength }}</strong> 收藏的餐廳
             </li>
             <li>
-              <strong>{{ followingsLength }}</strong> followings (追蹤者)
+              <strong>{{ user.followingsLength }}</strong> followings (追蹤者)
             </li>
             <li>
-              <strong>{{ followersLength }}</strong> followers (追隨者)
+              <strong>{{ user.followersLength }}</strong> followers (追隨者)
             </li>
           </ul>
-          <template v-if="isAuthenticated">
+          <template v-if="isCurrentUser">
             <router-link
-              :to="{name: 'user-profile-edit', params:{id: user.id}}"
+              :to="{ name: 'user-profile-edit', params: { id: user.id } }"
               class="btn btn-primary"
             >
               Edit
@@ -43,7 +39,7 @@
               v-if="isFollowed"
               type="button"
               class="btn btn-danger"
-              @click.stop.prevent="deleteFollowing()"
+              @click.stop.prevent="deleteFollowing(user.id)"
             >
               取消追蹤
             </button>
@@ -51,7 +47,7 @@
               v-else
               type="button"
               class="btn btn-primary"
-              @click.stop.prevent="addFollowing()"
+              @click.stop.prevent="addFollowing(user.id)"
             >
               追蹤
             </button>
@@ -63,70 +59,71 @@
 </template>
 
 <script>
+import { emptyImageFilter } from "./../utils/mixins";
+import usersAPI from "./../apis/users";
+import { Toast } from "./../utils/helpers";
 
-const dummyUser = {
-  currentUser :{
-    id:1,
-    name:'管理者',
-    email: 'root@example.com',
-    image: 'https://i.pravatar.cc/300',
-    isAdmin: true
-  },
-  isAuthenticated: true
-}
-
-import { emptyImageFilter } from './../utils/mixins'
 export default {
-  name:'UserProfileCard',
+  mixins: [emptyImageFilter],
   props: {
     user: {
-      type:Object,
-      require:true
+      type: Object,
+      required: true,
     },
-    isFollowed: {
+    isCurrentUser: {
       type: Boolean,
-      require: true
+      required: true,
     },
-    followingsLength: {
-      type:Number,
-      require:true
-    },
-    followersLength: {
-      type:Number,
-      require:true
-    },
-    commentsLength: {
-      type:Number,
-      require:true
-    },
-    favoritedRestaurantsLength: {
-      type:Number,
-      require:true
+    initialIsFollowed: {
+      type: Boolean,
+      required: true,
     },
   },
   data() {
     return {
-      currentUser:{},
-      isAuthenticated: false
-    }
+      isFollowed: this.initialIsFollowed,
+    };
+  },
+  watch: {
+    initialIsFollowed(isFollowed) {
+      this.isFollowed = isFollowed;
+    },
   },
   methods: {
-    fetchCurrentUser() {
-      const {currentUser, isAuthenticated} = dummyUser
-      this.currentUser = currentUser
-      this.isAuthenticated = isAuthenticated
+    async addFollowing(userId) {
+      try {
+        const { data } = await usersAPI.addFollowing({ userId });
+
+        if (data.status === "error") {
+          throw new Error(data.message);
+        }
+
+        this.isFollowed = true;
+      } catch (error) {
+        console.error(error.message);
+        Toast.fire({
+          icon: "error",
+          title: "無法加入追蹤，請稍後再試",
+        });
+      }
     },
-    addFollowing(id) {
-      this.$emit('handle-follow-click', id )
-    },
-    deleteFollowing(id) {
-      this.$emit('handle-unfollow-click', id )
+    async deleteFollowing(userId) {
+      try {
+        const { data } = await usersAPI.deleteFollowing({ userId });
+
+        if (data.status === "error") {
+          throw new Error(data.message);
+        }
+
+        this.isFollowed = false;
+      } catch (error) {
+        console.error(error.message);
+        Toast.fire({
+          icon: "error",
+          title: "無法取消追蹤，請稍後再試",
+        });
+      }
     },
   },
-  created() {
-    this.fetchCurrentUser()
-  },
-  mixins: [emptyImageFilter],
-  
-}
+};
 </script>

@@ -6,29 +6,18 @@
     <table class="table">
       <thead class="thead-dark">
         <tr>
-          <th scope="col">
-            #
-          </th>
-          <th scope="col">
-            Email
-          </th>
-          <th scope="col">
-            Role
-          </th>
-          <th
-            scope="col"
-            width="140"
-          >
-            Action
-          </th>
+          <th scope="col">#</th>
+          <th scope="col">Email</th>
+          <th scope="col">Role</th>
+          <th scope="col" width="140">Action</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="user in users" :key="user.id">
           <th scope="row">
-            {{user.id}}
+            {{ user.id }}
           </th>
-          <td>{{user.email}}</td>
+          <td>{{ user.email }}</td>
           <td v-if="user.isAdmin">Admin</td>
           <td v-else>User</td>
           <td v-if="currentUser.id !== user.id">
@@ -56,90 +45,65 @@
 </template>
 
 <script>
-
-const dummyData = {
-    "users": [
-        {
-            "id": 1,
-            "name": "root",
-            "email": "root@example.com",
-            "password": "$2a$10$7vnnFXP/BX9jX6AIJF1k9.pFnZ8pEwf/LcIaVWvhTKLWvYxZdpR/.",
-            "isAdmin": true,
-            "image": null,
-            "createdAt": "2023-06-06T09:37:38.000Z",
-            "updatedAt": "2023-06-06T09:37:38.000Z"
-        },
-        {
-            "id": 2,
-            "name": "user1",
-            "email": "user1@example.com",
-            "password": "$2a$10$j76V.l9gjJWZacZTgKcJU.aDtUFPP0jafb9g/Y9qoBg3tcNWJrhY2",
-            "isAdmin": false,
-            "image": null,
-            "createdAt": "2023-06-06T09:37:38.000Z",
-            "updatedAt": "2023-06-06T09:37:38.000Z"
-        },
-        {
-            "id": 3,
-            "name": "user2",
-            "email": "user2@example.com",
-            "password": "$2a$10$EL3O/QKH8bTd1BKdPS3QyOCV0aD1mBYv9Wz8mWHb6.1XIRk..6EUK",
-            "isAdmin": false,
-            "image": null,
-            "createdAt": "2023-06-06T09:37:38.000Z",
-            "updatedAt": "2023-06-06T09:37:38.000Z"
-        }
-    ]
-}
-const dummyUser = {
-  'profile': {
-    'id': 1,
-    'name': 'root',
-    'email': 'root@example.com',
-    'password': '$2a$10$OJ3jR93XlEMrQtYMWOIQh.EINWgaRFTXkd0Xi5OC/Vz4maztUXEPe',
-    'isAdmin': true,
-    'image': 'https://i.imgur.com/58ImzMM.png',
-    'createdAt': '2019-07-30T16:24:54.983Z',
-    'updatedAt': '2019-08-01T10:33:51.095Z',
-  }
-}
-
-import AdminNav from './../components/AdminNav.vue'
+import AdminNav from "./../components/AdminNav.vue";
+import adminAPI from "./../apis/admin";
+import { Toast } from "../utils/helpers";
+import { mapState } from "vuex";
 export default {
-  name:'AdminUsers',
+  name: "AdminUsers",
   components: {
-    AdminNav
+    AdminNav,
   },
   data() {
     return {
-      users:[],
-      currentUser: {}
-    }
+      users: [],
+    };
   },
   methods: {
-    fetchUsers () {
-      const { users } = dummyData
-      this.users = users
-    },
-    fetchCurrentUser() {
-      const currentUser = dummyUser.profile
-      this.currentUser = currentUser
-    },
-    toggleUserRole (userId) {
-      this.users = this.users.map(user => {
-        if (user.id === userId) {
-          return {
-            ...user,
-            isAdmin: !user.isAdmin
-          }
+    async fetchUsers() {
+      try {
+        const { data } = await adminAPI.users.get();
+        const { users } = data;
+        if (data.status === "error") {
+          throw new Error(data.message);
         }
-      return user
-      })
-    }
+        this.users = users;
+      } catch (error) {
+        Toast.fire({
+          icon: "error",
+          title: "無法取得使用者資料，請稍後再試",
+        });
+      }
+    },
+    async toggleUserRole(userId, isAdmin) {
+      try {
+        const {data} = await adminAPI.users.toggleRole({userId, isAdmin: (!isAdmin).toString()})
+        console.log(data)
+        if (data.status === "error") {
+          throw new Error(data.message);
+        }
+        this.users = this.users.map((user) => {
+          if (user.id === userId) {
+            return {
+              ...user,
+              isAdmin: !user.isAdmin,
+            };
+          }
+          return user;
+        });
+      } catch (error) {
+        Toast.fire({
+          icon:'error',
+          title:'無法變更使用者權限，請稍後再試'
+        })
+      }
+    },
   },
-  created () {
-    this.fetchCurrentUser()
-    this.fetchUsers()
-  }
-}
+  created() {
+    this.fetchUsers();
+  },
+  computed: {
+    ...mapState(["currentUser"]),
+  },
+};
 </script>

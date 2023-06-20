@@ -9,7 +9,7 @@
           name="name"
           class="form-control"
           placeholder="Enter Name"
-          :value="user.name"
+          :value="name"
           required
         >
       </div>
@@ -17,8 +17,8 @@
       <div class="form-group">
         <label for="image">Image</label>
         <img
-        v-if="user.image"
-        :src="user.image"
+        v-if="image"
+        :src="image"
         class="d-block img-thumbnail mb-3"
         width="200"
         height="200"
@@ -36,14 +36,17 @@
       <button
         type="submit"
         class="btn btn-primary"
+        :disabled="isProcessing"
       >
-        Submit
+        {{ isProcessing ? '資料更新中...' : 'Submit' }}
       </button>
     </form>
   </div>
 </template>
 
 <script>
+import { mapState } from 'vuex'
+import { Toast } from '../utils/helpers'
 
 const dummyData = {
   'profile': {
@@ -57,26 +60,34 @@ const dummyData = {
     'updatedAt': '2019-08-01T10:33:51.095Z',
   },
 }
-
+import usersAPI from './../apis/users'
 export default {
   data() {
     return {
-      user: {
-        name:'',
-        image: '',
-      }
+      id:0,
+      name:'',
+      email:'',
+      image:'',
+      isProcessing: false
     }
   },
   methods: {
-    fetchUser(userId) {
-      console.log('fetchUser id:' , userId)
-      const { profile } = dummyData
-      const { name, image } = profile
-      // console.log(name, image)
-      this.user = {
-        ...this.user,
-        name,
-        image
+    async setUser(userId) {
+      try {
+        const {id, name, email, image} = this.currentUser
+        if (id.toString() !== userId.toString()) {
+          this.$route.push({name:'not-found'})
+          return
+        }
+        this.id = id
+        this.name = name
+        this.email = email
+        this.image = image
+      } catch(error) {
+        Toast.fire({
+          icon:'error',
+          title:'目前取得資料，請稍後再試'
+        })
       }
     },
     handleFileUpload(e) {
@@ -87,23 +98,53 @@ export default {
       } else {
         const filesURL = window.URL.createObjectURL(files[0])
         console.log(filesURL)
-        this.user.image = filesURL
+        this.image = filesURL
       }
       
     },
-    handleSubmit(e) {
-      const form = e.target
-      console.log(form)
-      const formData = new FormData(form)
-      for (let [name, value] of formData.entries()) {
-        console.log(name + ':' + value)
+    async handleSubmit(e) {
+      try{
+        if (!this.name) {
+          Toast.fire({
+            icon: 'warning',
+            title: '您尚未填寫姓名'
+          })
+          return
+        }
+
+        const form = e.target
+        this.isProcessing = true
+        const formData = new FormData(form)
+        const {data} = await usersAPI.edit({userId: this.id, formData})
+        
+      
+        this.isProcessing = false
+        this.$router.push({ name: 'user-profile', params: { id: this.id } })
+        if (data.status === 'error') {
+          throw new Error(data.message)
+        }
+      } catch (error) {
+        this.isProcessing = false
+        Toast.fire({
+          icon:'error',
+          title:'目前無法編輯，請稍後再試'
+        })
       }
-    // 透過API傳送表單到伺服器
     }
   },
   created() {
     const { id } = this.$route.params
-    this.fetchUser( id)
-  }
+    this.setUser( id)
+  },
+  computed: {
+    ...mapState(['currentUser'])
+  },
+  watch: {
+    currentUser (user) {
+      if (user.id === -1) return
+      const { id } = this.$route.params
+      this.setUser(id)
+    }
+  },
 }
 </script>

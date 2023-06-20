@@ -26,7 +26,9 @@
 </template>
 
 <script>
-import {v4 as uuidv4} from 'uuid'
+import { Toast } from '../utils/helpers'
+import restaurantsAPI from './../apis/restaurants'
+
 export default {
   props: { 
     restaurantId:{
@@ -36,20 +38,42 @@ export default {
   },
   data() {
     return {
-      text:''
+      text:'',
+      isProcessing: false
     }
   },
   methods: {
-    handleSubmit() {
+    async handleSubmit() {
+      try {
+        this.isProcessing = true
+        if (!this.text) {
+          Toast.fire({
+            icon: 'warning',
+            title: '您尚未填寫任何評論'
+          })
+          return
+        }
+
+        const {data} = await restaurantsAPI.addComment({ restaurantId: this.restaurantId, text: this.text })
+        const {commentId} = data
+        console.log ('data', data)
+        this.$emit('after-create-comment', {
+          commentId,
+          restaurantId: this.restaurantId,
+          text: this.text
+        })
+        this.isProcessing = false
+        this.text = ''
+      } catch (error) {
+        this.isProcessing = false
+        Toast.fire({
+          icon:'error',
+          title:'目前無法新增評論，請稍後再試'
+        })
+      }
       // Todo:向API請求comment Id
       // 伺服器新增comment成功後
-      this.$emit('after-create-comment', {
-        commentId: uuidv4(),
-        restaurantId: this.restaurantId,
-        text: this.text
-      })
-      this.text = ''
     }
-  }
+  },
 }
 </script>

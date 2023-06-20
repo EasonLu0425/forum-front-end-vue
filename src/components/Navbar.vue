@@ -39,7 +39,7 @@
              to="#" 
              class="text-white mr-3"
           > 
-           使用者 您好
+           {{currentUser.name}} 您好
          </router-link>
          <button
            type="button" 
@@ -54,43 +54,48 @@
 </template>
 
 <script>
+import {mapState} from 'vuex'
 //seed data
-const dummyUser = {
-  currentUser :{
-    id:1,
-    name:'管理者',
-    email: 'root@example.com',
-    image: 'https://i.pravatar.cc/300',
-    isAdmin: true
-  },
-  isAuthenticated: true
-}
+// const dummyUser = {
+//   currentUser :{
+//     id:1,
+//     name:'管理者',
+//     email: 'root@example.com',
+//     image: 'https://i.pravatar.cc/300',
+//     isAdmin: true
+//   },
+//   isAuthenticated: true
+// }
 
 export default {
-  data() {
-    return {
-      currentUser: {
-        id: -1,
-        name: '',
-        email: '',
-        image: '',
-        isAdmin: false
-      },
-      isAuthenticated: false
-    }
+  computed: {
+    ...mapState(['currentUser', 'isAuthenticated'])
   },
-  methods: {
-    fetchUser () {
-      this.currentUser = {
-        ...this.currentUser,
-      ...dummyUser.currentUser
-      }
-      this.isAuthenticated = dummyUser.isAuthenticated
-    }
+  // data() {
+  //   return {
+  //     currentUser: {
+  //       id: -1,
+  //       name: '',
+  //       email: '',
+  //       image: '',
+  //       isAdmin: false
+  //     },
+  //     isAuthenticated: false
+  //   }
+  // },
+  // methods: {
+  //   fetchUser () {
+  //     this.currentUser = {
+  //       ...this.currentUser,
+  //     ...dummyUser.currentUser
+  //     }
+  //     this.isAuthenticated = dummyUser.isAuthenticated
+  //   }
 
-  },
-  created() {
-    this.fetchUser()
-  }
+  // },
+  // created() {
+  //   this.fetchUser()
+  // },
+  
 }
 </script>
